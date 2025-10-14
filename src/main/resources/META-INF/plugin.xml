@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.example.jsonviewer</id>
-    <name>JSON Tree Viewer</name>
-    <vendor email="dev@example.com">Example</vendor>
+    <name>JSON Tree</name>
+    <vendor email="dev@example.com">Pavel Rotari</vendor>
 
     <description><![CDATA[Displays the currently open JSON file as a tree with icons, collapse/expand, refresh, and search.]]></description>
 
@@ -13,6 +13,8 @@
                     factoryClass="com.example.jsonviewer.JsonTreeToolWindowFactory"
                     anchor="right"
                     icon="/icons/icon.svg"
-                    secondary="true"/>
+                    secondary="true"
+                    doNotActivateOnStart="true"
+        />
     </extensions>
 </idea-plugin>

@@ -93,9 +93,9 @@ public class JsonTreePanel {
         searchField.addActionListener(e -> searchNext());
         group.addSeparator();
         group.add(new SearchFieldAction(this));
+        group.add(new ToggleWholeWordAction(this));
         group.add(new SearchUpAction(this));
         group.add(new SearchDownAction(this));
-        group.add(new ToggleWholeWordAction(this));
 
         toolbar = ActionManager.getInstance().createActionToolbar("JsonTreeToolbar", group, true);
         toolbar.setTargetComponent(root);
