@@ -10,6 +10,7 @@ import com.example.jsonviewer.actions.ToggleWholeWordAction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.json.JsonFileType;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
@@ -17,6 +18,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.ui.ScrollPaneFactory;
@@ -68,6 +70,7 @@ public class JsonTreePanel {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private List<String> lastSelectedPath = new ArrayList<>();
+    private final Disposable disposable = Disposer.newDisposable("JsonTreePanelDisposable");
 
     public JsonTreePanel(Project project, ToolWindow toolWindow) {
         this.project = project;
@@ -383,5 +386,9 @@ public class JsonTreePanel {
 
     public void requestRefresh() {
         refresh();
+    }
+
+    public Disposable getDisposable() {
+        return disposable;
     }
 }
