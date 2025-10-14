@@ -7,21 +7,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.icons.AllIcons;
 import com.intellij.json.JsonFileType;
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionToolbar;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.ui.AnActionButton;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.TreeSpeedSearch;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.ui.treeStructure.Tree;
+import com.intellij.util.containers.Convertor;
 import com.intellij.util.ui.JBUI;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -34,11 +36,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,7 +54,7 @@ public class JsonTreePanel {
     private final JPanel messageCard;
     private final JBLabel messageLabel;
 
-    private final JTree tree;
+    private final Tree tree;
     private final DefaultTreeModel treeModel;
     private final JBTextField searchField;
     private final JButton upButton;
@@ -93,7 +92,7 @@ public class JsonTreePanel {
 
         DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new NodeInfo("No data", mapper.nullNode()));
         treeModel = new DefaultTreeModel(rootNode);
-        tree = new JTree(treeModel);
+        tree = new Tree(treeModel);
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(new JsonTreeCellRenderer());
