@@ -3,9 +3,12 @@ package com.example.jsonviewer;
 import com.example.jsonviewer.actions.CollapseAllAction;
 import com.example.jsonviewer.actions.ExpandAllAction;
 import com.example.jsonviewer.actions.RefreshAction;
+import com.example.jsonviewer.actions.SearchDownAction;
+import com.example.jsonviewer.actions.SearchFieldAction;
+import com.example.jsonviewer.actions.SearchUpAction;
+import com.example.jsonviewer.actions.ToggleWholeWordAction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.intellij.icons.AllIcons;
 import com.intellij.json.JsonFileType;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionToolbar;
@@ -22,7 +25,6 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.treeStructure.Tree;
-import com.intellij.util.containers.Convertor;
 import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
@@ -32,12 +34,14 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.*;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,9 +61,9 @@ public class JsonTreePanel {
     private final Tree tree;
     private final DefaultTreeModel treeModel;
     private final JBTextField searchField;
-    private final JButton upButton;
-    private final JButton downButton;
-    private final JToggleButton wholeWordToggle;
+    private final ActionToolbar toolbar;
+    private boolean searchControlsEnabled;
+    private boolean wholeWordOnly;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -77,7 +81,20 @@ public class JsonTreePanel {
         group.add(new ExpandAllAction(this));
         group.add(new CollapseAllAction(this));
         group.add(new RefreshAction(this));
-        ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("JsonTreeToolbar", group, true);
+
+        searchField = new JBTextField();
+        searchField.setColumns(20);
+        searchField.getEmptyText().setText("Search...");
+        Dimension preferredSearchSize = searchField.getPreferredSize();
+        searchField.setMaximumSize(preferredSearchSize);
+        searchField.addActionListener(e -> searchNext());
+        group.addSeparator();
+        group.add(new SearchFieldAction(this));
+        group.add(new SearchUpAction(this));
+        group.add(new SearchDownAction(this));
+        group.add(new ToggleWholeWordAction(this));
+
+        toolbar = ActionManager.getInstance().createActionToolbar("JsonTreeToolbar", group, true);
         toolbar.setTargetComponent(root);
         root.add(toolbar.getComponent(), BorderLayout.NORTH);
 
@@ -101,37 +118,6 @@ public class JsonTreePanel {
         JScrollPane scroll = ScrollPaneFactory.createScrollPane(tree);
         treeCard.add(scroll, BorderLayout.CENTER);
 
-        JPanel searchPanel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
-        searchPanel.setBorder(JBUI.Borders.empty(6, 6, 6, 6));
-        searchField = new JBTextField();
-        searchField.getEmptyText().setText("Search...");
-        JPanel buttons = new JPanel(new GridLayout(1, 3, JBUI.scale(6), 0));
-        upButton = new JButton(AllIcons.Actions.MoveUp);
-        downButton = new JButton(AllIcons.Actions.MoveDown);
-        buttons.add(upButton);
-        buttons.add(downButton);
-
-        wholeWordToggle = new JToggleButton(AllIcons.Actions.Words);
-        wholeWordToggle.setToolTipText("Search whole word only");
-        buttons.add(wholeWordToggle);
-
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(buttons, BorderLayout.EAST);
-        root.add(searchPanel, BorderLayout.SOUTH);
-
-        upButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                findMatch(true);
-            }
-        });
-        downButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                findMatch(false);
-            }
-        });
-
         tree.addTreeSelectionListener(new TreeSelectionListener() {
             @Override
             public void valueChanged(TreeSelectionEvent e) {
@@ -151,8 +137,8 @@ public class JsonTreePanel {
 
     private boolean matches(String label, String query) {
         if (query == null || query.isEmpty()) return false;
-        if (!wholeWordToggle.isSelected()) {
-            return label.toLowerCase().contains(query.toLowerCase());
+        if (!wholeWordOnly) {
+            return label.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
         }
         // Whole-word match using case-insensitive word boundaries
         String pattern = "\\b" + Pattern.quote(query) + "\\b";
@@ -242,10 +228,9 @@ public class JsonTreePanel {
     }
 
     private void setControlsEnabled(boolean enabled) {
+        searchControlsEnabled = enabled;
         searchField.setEnabled(enabled);
-        upButton.setEnabled(enabled);
-        downButton.setEnabled(enabled);
-        wholeWordToggle.setEnabled(enabled);
+        toolbar.updateActionsImmediately();
     }
 
     private void findMatch(boolean searchUp) {
@@ -274,12 +259,36 @@ public class JsonTreePanel {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) candidate.getLastPathComponent();
             Object uo = node.getUserObject();
             String s = String.valueOf(uo);
-            if (matches(s.toLowerCase(), query.toLowerCase())) {
+            if (matches(s, query)) {
                 tree.setSelectionPath(candidate);
                 tree.scrollPathToVisible(candidate);
                 break;
             }
         }
+    }
+
+    public void searchPrevious() {
+        findMatch(true);
+    }
+
+    public void searchNext() {
+        findMatch(false);
+    }
+
+    public boolean areSearchControlsEnabled() {
+        return searchControlsEnabled;
+    }
+
+    public boolean isWholeWordOnly() {
+        return wholeWordOnly;
+    }
+
+    public void setWholeWordOnly(boolean wholeWordOnly) {
+        this.wholeWordOnly = wholeWordOnly;
+    }
+
+    public JBTextField getSearchField() {
+        return searchField;
     }
 
     private List<TreePath> getAllPaths() {
